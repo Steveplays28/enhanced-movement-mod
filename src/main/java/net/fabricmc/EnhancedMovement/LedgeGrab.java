@@ -1,27 +1,28 @@
 package net.fabricmc.EnhancedMovement;
 
+import net.fabricmc.EnhancedMovement.config.EnhancedMovementConfigLoader;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public class LedgeGrab {
 	public void tick() {
-		MinecraftClient client = MinecraftClient.getInstance();
-		ClientPlayerEntity player = client.player;
+		var minecraftClient = MinecraftClient.getInstance();
+		var player = minecraftClient.player;
+		if (player == null) return;
 
-		boolean jumpKeyIsPressed = client.options.jumpKey.isPressed();
+		boolean jumpKeyIsPressed = minecraftClient.options.jumpKey.isPressed();
 		if (!jumpKeyIsPressed) return;
 		if (!isNearLedge(player.getBlockPos())) return;
 
-		player.setVelocity(player.getVelocity().x, 0.4f, player.getVelocity().z);
-		// Stamina Player's consumption
+		player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
+
+		// Add hunger
 		player.addExhaustion(3000000.0F);
 	}
 
@@ -45,7 +46,7 @@ public class LedgeGrab {
 
 	public boolean isValidLedge(BlockPos blockPos) {
 		boolean isNotLedgeEmpty = !isEmpty(blockPos);
-		boolean isLedgeTopEmpty = isEmpty(blockPos.add(0, 1, 0));
+		boolean isLedgeTopEmpty = isEmpty(blockPos.add(0, 1, 0)) || isEmpty(blockPos.add(0, 2, 0));
 
 		// Check if 'Ledge' not empty so as not to be grabbing on empty blocks.
 		// Check if Ledge's  top block is empty.
@@ -53,10 +54,23 @@ public class LedgeGrab {
 	}
 
 	public boolean isEmpty(BlockPos blockPos) {
-		ClientPlayerEntity player = MinecraftClient.getInstance().player;
-		World world = player.getWorld();
+		var minecraftClient = MinecraftClient.getInstance();
+		var player = minecraftClient.player;
+		if (player == null) return true;
+		var world = player.getWorld();
+
 		BlockState blockState = player.world.getBlockState(blockPos);
 		VoxelShape voxelShape = blockState.getCollisionShape(world, blockPos, ShapeContext.of(player));
 		return voxelShape.isEmpty();
+	}
+
+	public int getLedgeHeight(BlockPos blockPos) {
+		if (isEmpty(blockPos.add(0, 1, 0))) {
+			return 1;
+		} else if (isEmpty(blockPos.add(0, 2, 0))) {
+			return 1;
+		}
+
+		return 0;
 	}
 }
