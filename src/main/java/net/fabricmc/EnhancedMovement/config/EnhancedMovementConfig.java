@@ -12,6 +12,6 @@ public class EnhancedMovementConfig {
 	public double fixedJumpBoost = 0.4;
 	public float dashSpeed = 1.7f;
 	public float inAirDashSpeed = 1.3f;
-	public float ledgeGrabMaxHeight = 2f;
+	public int ledgeGrabRange = 1;
 	public float ledgeGrabHeightPerBlock = 0.2f;
 }

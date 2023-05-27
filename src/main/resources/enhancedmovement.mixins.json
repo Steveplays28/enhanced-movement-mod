@@ -5,7 +5,5 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "LivingEntityMixin"
-  ],
-  "client": [
   ]
 }

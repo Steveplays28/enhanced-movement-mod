@@ -15,28 +15,40 @@ public class LedgeGrab {
 		var minecraftClient = MinecraftClient.getInstance();
 		var player = minecraftClient.player;
 		if (player == null) return;
+		boolean jumpKeyPressed = minecraftClient.options.jumpKey.isPressed();
+		boolean sneakKeyPressed = minecraftClient.options.sneakKey.isPressed();
 
-		boolean jumpKeyIsPressed = minecraftClient.options.jumpKey.isPressed();
-		if (!jumpKeyIsPressed) return;
-		if (!isNearLedge(player.getBlockPos())) return;
-
-		player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
-
-		// Add hunger
-		player.addExhaustion(3000000.0F);
+		if (isNearLedge(player.getBlockPos())) {
+			if (jumpKeyPressed) {
+				player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
+				player.addExhaustion(3000000.0F);
+			} else if (sneakKeyPressed) {
+				player.setVelocity(player.getVelocity().x, 0, player.getVelocity().z);
+			}
+		}
 	}
 
 	public boolean isNearLedge(@NotNull BlockPos blockPos) {
-		// List of blocks which surrounds the player;
+		var ledgeGrabRange = EnhancedMovementConfigLoader.CONFIG.ledgeGrabRange;
+
+		// List of blocks which surrounds the player
 		List<BlockPos> playerBlockPos = List.of(
-				blockPos.add(-1, 0, 0),
-				blockPos.add(+1, 0, 0),
+				// Around player block position (diagonals don't count)
 				blockPos.add(0, 0, 0),
-				blockPos.add(0, 0, -1),
-				blockPos.add(0, 0, 1)
+				blockPos.add(ledgeGrabRange, 0, 0),
+				blockPos.add(-ledgeGrabRange, 0, 0),
+				blockPos.add(0, 0, ledgeGrabRange),
+				blockPos.add(0, 0, -ledgeGrabRange),
+
+				// Around player block position + 1 up (diagonals don't count)
+				blockPos.add(0, 1, 0),
+				blockPos.add(ledgeGrabRange, 1, 0),
+				blockPos.add(-ledgeGrabRange, 1, 0),
+				blockPos.add(0, 1, -ledgeGrabRange),
+				blockPos.add(0, 1, ledgeGrabRange)
 		);
 
-		// Check if any of the surroundings is a valid ledge.
+		// Check if any of the surroundings is a valid ledge
 		boolean hasValidLedge = playerBlockPos
 				.stream()
 				.anyMatch(this::isValidLedge);
@@ -45,12 +57,8 @@ public class LedgeGrab {
 	}
 
 	public boolean isValidLedge(BlockPos blockPos) {
-		boolean isNotLedgeEmpty = !isEmpty(blockPos);
-		boolean isLedgeTopEmpty = isEmpty(blockPos.add(0, 1, 0)) || isEmpty(blockPos.add(0, 2, 0));
-
-		// Check if 'Ledge' not empty so as not to be grabbing on empty blocks.
-		// Check if Ledge's  top block is empty.
-		return isNotLedgeEmpty && isLedgeTopEmpty;
+		// Check if the ledge block isn't empty so it doesn't try to grab onto air
+		return !isEmpty(blockPos);
 	}
 
 	public boolean isEmpty(BlockPos blockPos) {
