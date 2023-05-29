@@ -2,7 +2,8 @@
 	"format_version": "1.8.0",
 	"animations": {
 		"climb_front": {
-			"animation_length": 1,
+			"loop": true,
+			"animation_length": 2,
 			"bones": {
 				"right_arm": {
 					"rotation": {
@@ -11,6 +12,9 @@
 						},
 						"1.0": {
 							"vector": [-37.5, 0, 0]
+						},
+						"2.0": {
+							"vector": [-150, 0, 0]
 						}
 					}
 				},
@@ -21,6 +25,9 @@
 						},
 						"1.0": {
 							"vector": [-150, 0, 0]
+						},
+						"2.0": {
+							"vector": [-37.5, 0, 0]
 						}
 					}
 				}

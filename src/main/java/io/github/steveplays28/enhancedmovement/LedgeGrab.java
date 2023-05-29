@@ -2,7 +2,6 @@ package io.github.steveplays28.enhancedmovement;
 
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
-import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
 import dev.kosmx.playerAnim.core.util.Ease;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import io.github.steveplays28.enhancedmovement.animation.IAnimatedPlayer;
@@ -10,6 +9,7 @@ import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoad
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
@@ -18,6 +18,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class LedgeGrab {
+	public static final String CLIMB_FRONT_ANIMATION = "climb_front";
+	public static final String HANG_ANIMATION = "hang";
+
+	public boolean jumpKeyPressedLastTick;
+	public boolean sneakKeyPressedLastTick;
+
 	public void tick() {
 		var minecraftClient = MinecraftClient.getInstance();
 		var player = minecraftClient.player;
@@ -26,30 +32,34 @@ public class LedgeGrab {
 		boolean sneakKeyPressed = minecraftClient.options.sneakKey.isPressed();
 
 		if (isNearLedge(player.getBlockPos())) {
-			var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
-			KeyframeAnimation anim = null;
+			// Ledge climb start
+			if (jumpKeyPressed != jumpKeyPressedLastTick) {
+				if (jumpKeyPressed) {
+					onLedgeClimb(player);
+				} else {
+					stopAnimations(player);
+				}
+			}
+
+			// Ledge hang start
+			if (sneakKeyPressed != sneakKeyPressedLastTick) {
+				if (sneakKeyPressed) {
+					onLedgeHang(player);
+				} else {
+					stopAnimations(player);
+				}
+			}
 
 			if (jumpKeyPressed) {
 				player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
 				player.addExhaustion(3000000.0F);
-
-				// Climbing animation
-				anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, "climb_front"));
 			} else if (sneakKeyPressed) {
 				player.setVelocity(player.getVelocity().x, 0, player.getVelocity().z);
-
-				// Hanging animation
-				anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, "hang"));
 			}
-
-			KeyframeAnimationPlayer keyframeAnimationPlayer;
-			if (anim == null) {
-				keyframeAnimationPlayer = null;
-			} else {
-				keyframeAnimationPlayer = new KeyframeAnimationPlayer(anim);
-			}
-			animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), keyframeAnimationPlayer);
 		}
+
+		jumpKeyPressedLastTick = jumpKeyPressed;
+		sneakKeyPressedLastTick = sneakKeyPressed;
 	}
 
 	public boolean isNearLedge(@NotNull BlockPos blockPos) {
@@ -58,24 +68,13 @@ public class LedgeGrab {
 		// List of blocks which surrounds the player
 		List<BlockPos> playerBlockPositions = List.of(
 				// Around player block position (diagonals don't count)
-				blockPos.add(0, 0, 0),
-				blockPos.add(ledgeGrabRange, 0, 0),
-				blockPos.add(-ledgeGrabRange, 0, 0),
-				blockPos.add(0, 0, ledgeGrabRange),
-				blockPos.add(0, 0, -ledgeGrabRange),
+				blockPos.add(0, 0, 0), blockPos.add(ledgeGrabRange, 0, 0), blockPos.add(-ledgeGrabRange, 0, 0), blockPos.add(0, 0, ledgeGrabRange), blockPos.add(0, 0, -ledgeGrabRange),
 
 				// Around player block position + 1 up (diagonals don't count)
-				blockPos.add(0, 1, 0),
-				blockPos.add(ledgeGrabRange, 1, 0),
-				blockPos.add(-ledgeGrabRange, 1, 0),
-				blockPos.add(0, 1, -ledgeGrabRange),
-				blockPos.add(0, 1, ledgeGrabRange)
-		);
+				blockPos.add(0, 1, 0), blockPos.add(ledgeGrabRange, 1, 0), blockPos.add(-ledgeGrabRange, 1, 0), blockPos.add(0, 1, -ledgeGrabRange), blockPos.add(0, 1, ledgeGrabRange));
 
 		// Check if any of the surroundings is a valid ledge
-		boolean hasValidLedge = playerBlockPositions
-				.stream()
-				.anyMatch(this::isValidLedge);
+		boolean hasValidLedge = playerBlockPositions.stream().anyMatch(this::isValidLedge);
 		hasValidLedge = hasValidLedge && isEmpty(blockPos.add(0, -1, 0));
 
 //		for (var playerBlockPos : playerBlockPositions) {
@@ -120,5 +119,40 @@ public class LedgeGrab {
 		}
 
 		return 0;
+	}
+
+	public void onLedgeClimb(ClientPlayerEntity player) {
+		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+		var anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, CLIMB_FRONT_ANIMATION));
+		if (anim == null) {
+			EnhancedMovement.LOGGER.error("Animation {} doesn't exist.", CLIMB_FRONT_ANIMATION);
+			return;
+		}
+
+		var builder = anim.mutableCopy();
+		builder.isLooped = true;
+		anim = builder.build();
+
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
+		EnhancedMovement.LOGGER.info("playing ledge climb animation");
+	}
+
+	public void onLedgeHang(ClientPlayerEntity player) {
+		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+		var anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, HANG_ANIMATION));
+		if (anim == null) {
+			EnhancedMovement.LOGGER.error("Animation {} doesn't exist.", HANG_ANIMATION);
+			return;
+		}
+
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
+		EnhancedMovement.LOGGER.info("playing ledge hang animation");
+	}
+
+	public void stopAnimations(ClientPlayerEntity player) {
+		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), null);
+
+		EnhancedMovement.LOGGER.info("stopping all animations");
 	}
 }
