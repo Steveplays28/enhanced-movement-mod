@@ -1,9 +1,16 @@
 package io.github.steveplays28.enhancedmovement;
 
+import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
+import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
+import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
+import dev.kosmx.playerAnim.core.util.Ease;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
+import io.github.steveplays28.enhancedmovement.animation.IAnimatedPlayer;
 import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoader;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import org.jetbrains.annotations.NotNull;
@@ -19,12 +26,29 @@ public class LedgeGrab {
 		boolean sneakKeyPressed = minecraftClient.options.sneakKey.isPressed();
 
 		if (isNearLedge(player.getBlockPos())) {
+			var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+			KeyframeAnimation anim = null;
+
 			if (jumpKeyPressed) {
 				player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
 				player.addExhaustion(3000000.0F);
+
+				// Climbing animation
+				anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, "climb_front"));
 			} else if (sneakKeyPressed) {
 				player.setVelocity(player.getVelocity().x, 0, player.getVelocity().z);
+
+				// Hanging animation
+				anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, "hang"));
 			}
+
+			KeyframeAnimationPlayer keyframeAnimationPlayer;
+			if (anim == null) {
+				keyframeAnimationPlayer = null;
+			} else {
+				keyframeAnimationPlayer = new KeyframeAnimationPlayer(anim);
+			}
+			animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), keyframeAnimationPlayer);
 		}
 	}
 
@@ -52,12 +76,24 @@ public class LedgeGrab {
 		boolean hasValidLedge = playerBlockPositions
 				.stream()
 				.anyMatch(this::isValidLedge);
+		hasValidLedge = hasValidLedge && isEmpty(blockPos.add(0, -1, 0));
 
 //		for (var playerBlockPos : playerBlockPositions) {
-//			if (playerBlockPos)
+//			if (playerBlockPos == blockPos.add(ledgeGrabRange, 0, 0)) {
+//				// Wall is on the left
+//			} else if (playerBlockPos == blockPos.add(-ledgeGrabRange, 0, 0)) {
+//				// Wall is on the right
+//			} else if (playerBlockPos == blockPos.add(0, 0, ledgeGrabRange)) {
+//				// Wall is in front
+//				var animationContainer = EnhancedMovement.getInstance().enhancedMovement_getModAnimation();
+//
+//				KeyframeAnimation anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID, "climb_front"));
+//				if (anim == null) return hasValidLedge;
+//				animationContainer.setAnimation(new KeyframeAnimationPlayer(anim));
+//			}
 //		}
 
-		return hasValidLedge && isEmpty(blockPos.add(0, -1, 0));
+		return hasValidLedge;
 	}
 
 	public boolean isValidLedge(BlockPos blockPos) {

@@ -3,16 +3,15 @@
   "id": "enhancedmovement",
   "version": "${version}",
   "name": "Enhanced Movement",
-  "description": "A mod that enabled a quick and dirty double jump and dash in any direction!",
+  "description": "Grab ledges and climb them!",
   "authors": [
-    "Kestalkayden"
+    "Steveplays28"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/kestalkayden/enhanced-movement-mod"
+    "sources": "https://github.com/steveplays28/enhanced-movement-mod"
   },
-  "license": "CC0-1.0",
-  "icon": "assets/EnhancedMovement/icon.png",
+  "license": "LGPL-3.0",
+  "icon": "assets/enhancedmovement/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class EnhancedMovement implements ModInitializer {
 	public static final String MOD_ID = "enhanced-movement";
+	public static final String MOD_ID_FOLDERS = "enhancedmovement";
 	public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
 	private static EnhancedMovement instance;
