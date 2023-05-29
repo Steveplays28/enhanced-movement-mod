@@ -23,6 +23,7 @@ public class LedgeGrab {
 
 	public boolean jumpKeyPressedLastTick;
 	public boolean sneakKeyPressedLastTick;
+	public boolean wasNearLedgeLastTick;
 
 	public void tick() {
 		var minecraftClient = MinecraftClient.getInstance();
@@ -30,25 +31,28 @@ public class LedgeGrab {
 		if (player == null) return;
 		boolean jumpKeyPressed = minecraftClient.options.jumpKey.isPressed();
 		boolean sneakKeyPressed = minecraftClient.options.sneakKey.isPressed();
+		boolean isNearLedge = isNearLedge(player.getBlockPos());
 
-		if (isNearLedge(player.getBlockPos())) {
-			// Ledge climb start
-			if (jumpKeyPressed != jumpKeyPressedLastTick) {
-				if (jumpKeyPressed) {
-					onLedgeClimb(player);
-				} else {
-					stopAnimations(player);
-				}
+		// Ledge climb start
+		if (jumpKeyPressed != jumpKeyPressedLastTick || isNearLedge != wasNearLedgeLastTick) {
+			if (jumpKeyPressed && isNearLedge) {
+				onLedgeClimb(player);
+			} else {
+				stopAnimations(player);
 			}
+		}
 
-			// Ledge hang start
-			if (sneakKeyPressed != sneakKeyPressedLastTick) {
-				if (sneakKeyPressed) {
-					onLedgeHang(player);
-				} else {
-					stopAnimations(player);
-				}
+		// Ledge hang start
+		if ((isNearLedge != wasNearLedgeLastTick || jumpKeyPressed != jumpKeyPressedLastTick) && !jumpKeyPressed) {
+			if (isNearLedge) {
+				onLedgeHang(player);
+			} else {
+				stopAnimations(player);
 			}
+		}
+
+		if (isNearLedge) {
+			player.setVelocity(player.getVelocity().x, player.getVelocity().y * 0.8f, player.getVelocity().z);
 
 			if (jumpKeyPressed) {
 				player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
@@ -56,10 +60,11 @@ public class LedgeGrab {
 			} else if (sneakKeyPressed) {
 				player.setVelocity(player.getVelocity().x, 0, player.getVelocity().z);
 			}
-
-			jumpKeyPressedLastTick = jumpKeyPressed;
-			sneakKeyPressedLastTick = sneakKeyPressed;
 		}
+
+		jumpKeyPressedLastTick = jumpKeyPressed;
+		sneakKeyPressedLastTick = sneakKeyPressed;
+		wasNearLedgeLastTick = isNearLedge;
 	}
 
 	public boolean isNearLedge(@NotNull BlockPos blockPos) {
@@ -129,9 +134,9 @@ public class LedgeGrab {
 			return;
 		}
 
-		var builder = anim.mutableCopy();
-		builder.isLooped = true;
-		anim = builder.build();
+//		var builder = anim.mutableCopy();
+//		builder.isLooped = true;
+//		anim = builder.build();
 
 		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
 		EnhancedMovement.LOGGER.info("playing ledge climb animation");
