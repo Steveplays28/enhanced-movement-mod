@@ -4,6 +4,6 @@
   "package": "net.fabricmc.EnhancedMovement.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "LivingEntityMixin"
+    "io.github.steveplays28.enhancedmovement.mixin.LivingEntityMixin"
   ]
 }

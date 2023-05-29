@@ -1,4 +1,4 @@
-package net.fabricmc.EnhancedMovement;
+package io.github.steveplays28.enhancedmovement;
 
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;

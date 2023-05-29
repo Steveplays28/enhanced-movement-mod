@@ -1,9 +1,9 @@
-package net.fabricmc.EnhancedMovement.config;
+package io.github.steveplays28.enhancedmovement.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
-import net.fabricmc.EnhancedMovement.EnhancedMovement;
+import io.github.steveplays28.enhancedmovement.EnhancedMovement;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;

@@ -1,6 +1,6 @@
-package net.fabricmc.EnhancedMovement;
+package io.github.steveplays28.enhancedmovement;
 
-import net.fabricmc.EnhancedMovement.config.EnhancedMovementConfigLoader;
+import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoader;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
@@ -32,7 +32,7 @@ public class LedgeGrab {
 		var ledgeGrabRange = EnhancedMovementConfigLoader.CONFIG.ledgeGrabRange;
 
 		// List of blocks which surrounds the player
-		List<BlockPos> playerBlockPos = List.of(
+		List<BlockPos> playerBlockPositions = List.of(
 				// Around player block position (diagonals don't count)
 				blockPos.add(0, 0, 0),
 				blockPos.add(ledgeGrabRange, 0, 0),
@@ -49,9 +49,13 @@ public class LedgeGrab {
 		);
 
 		// Check if any of the surroundings is a valid ledge
-		boolean hasValidLedge = playerBlockPos
+		boolean hasValidLedge = playerBlockPositions
 				.stream()
 				.anyMatch(this::isValidLedge);
+
+//		for (var playerBlockPos : playerBlockPositions) {
+//			if (playerBlockPos)
+//		}
 
 		return hasValidLedge && isEmpty(blockPos.add(0, -1, 0));
 	}

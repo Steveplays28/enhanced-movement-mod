@@ -1,6 +1,6 @@
-package net.fabricmc.EnhancedMovement.mixin;
+package io.github.steveplays28.enhancedmovement.mixin;
 
-import net.fabricmc.EnhancedMovement.EnhancedMovement;
+import io.github.steveplays28.enhancedmovement.EnhancedMovement;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;

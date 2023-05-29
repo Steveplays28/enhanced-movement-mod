@@ -1,4 +1,4 @@
-package net.fabricmc.EnhancedMovement.config;
+package io.github.steveplays28.enhancedmovement.config;
 
 public class EnhancedMovementConfig {
 	public boolean enableDoubleJump = true;

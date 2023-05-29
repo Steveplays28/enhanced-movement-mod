@@ -1,6 +1,6 @@
-package net.fabricmc.EnhancedMovement;
+package io.github.steveplays28.enhancedmovement;
 
-import net.fabricmc.EnhancedMovement.config.EnhancedMovementConfigLoader;
+import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoader;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;

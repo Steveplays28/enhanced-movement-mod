@@ -16,7 +16,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.EnhancedMovement.EnhancedMovement"
+      "io.github.steveplays28.enhancedmovement.EnhancedMovement"
     ]
   },
   "mixins": [
