@@ -56,10 +56,10 @@ public class LedgeGrab {
 			} else if (sneakKeyPressed) {
 				player.setVelocity(player.getVelocity().x, 0, player.getVelocity().z);
 			}
-		}
 
-		jumpKeyPressedLastTick = jumpKeyPressed;
-		sneakKeyPressedLastTick = sneakKeyPressed;
+			jumpKeyPressedLastTick = jumpKeyPressed;
+			sneakKeyPressedLastTick = sneakKeyPressed;
+		}
 	}
 
 	public boolean isNearLedge(@NotNull BlockPos blockPos) {
