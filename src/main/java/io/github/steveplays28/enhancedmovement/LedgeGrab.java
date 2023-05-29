@@ -134,10 +134,6 @@ public class LedgeGrab {
 			return;
 		}
 
-//		var builder = anim.mutableCopy();
-//		builder.isLooped = true;
-//		anim = builder.build();
-
 		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
 		EnhancedMovement.LOGGER.info("playing ledge climb animation");
 	}
