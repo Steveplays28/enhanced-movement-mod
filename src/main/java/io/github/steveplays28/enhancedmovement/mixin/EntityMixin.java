@@ -5,7 +5,9 @@ import io.github.steveplays28.enhancedmovement.LedgeGrab;
 import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoader;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -19,6 +21,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Entity.class)
 public abstract class EntityMixin {
 	@Shadow
+	public float speed;
+	@Shadow
+	public float horizontalSpeed;
+
+	@Shadow
+	private EntityDimensions dimensions;
+	@Shadow
+	private float standingEyeHeight;
+
+	@Shadow
 	public abstract boolean isSneaking();
 
 	@Shadow
@@ -28,14 +40,6 @@ public abstract class EntityMixin {
 	public abstract BlockPos getBlockPos();
 
 	@Shadow
-	public float speed;
-	@Shadow
-	public float horizontalSpeed;
-
-	@Shadow
-	public abstract Box getBoundingBox();
-
-	@Shadow
 	public abstract Vec3d getPos();
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -43,16 +47,19 @@ public abstract class EntityMixin {
 	public abstract boolean isPlayer();
 
 	@Shadow
-	private EntityDimensions dimensions;
-	@Shadow
-	private float standingEyeHeight;
+	public abstract void setPosition(Vec3d pos);
 
 	@Shadow
-	protected abstract float getEyeHeight(EntityPose pose, EntityDimensions dimensions);
+	public abstract Vec3d getRotationVector();
 
-	@Shadow private Vec3d pos;
+	@Shadow
+	public abstract void addVelocity(Vec3d velocity);
 
-	@Shadow public abstract void setPosition(Vec3d pos);
+	@Shadow public abstract Vec3d getVelocity();
+
+	@Shadow public abstract boolean isSubmergedInWater();
+
+	@Shadow public abstract boolean isSubmergedIn(TagKey<Fluid> fluidTag);
 
 	public boolean wasSneakingLastTick;
 	public boolean isSliding;
@@ -62,12 +69,18 @@ public abstract class EntityMixin {
 		if (!isPlayer()) return;
 
 		// Sliding
-		if (isSneaking() != wasSneakingLastTick && isSneaking() && !LedgeGrab.isNearLedge(getBlockPos()) && (speed > 0.1f || horizontalSpeed > 0.1f)) {
+		if (isSneaking() != wasSneakingLastTick && isSneaking() && isOnGround() && !isSubmergedInWater() && !isSubmergedIn(FluidTags.LAVA) && !LedgeGrab.isNearLedge(getBlockPos()) && (speed > 0.1f || horizontalSpeed > 0.1f)) {
 			onSlideStart();
 		}
-		if (isSneaking() != wasSneakingLastTick && !isSneaking() && isSliding) {
+		if (isSneaking() != wasSneakingLastTick && wasSneakingLastTick && !isSneaking() && isSliding) {
 			onSlideStop();
 		}
+		if (isSliding && getVelocity().length() < 0.1f) {
+			EnhancedMovement.LOGGER.info("stop slide no vel server");
+			onSlideStop();
+		}
+
+		EnhancedMovement.LOGGER.debug(getVelocity().length());
 
 		wasSneakingLastTick = isSneaking();
 	}
@@ -83,27 +96,17 @@ public abstract class EntityMixin {
 	}
 
 	public void onSlideStart() {
-		// Move camera down
-//		var minecraftClient = MinecraftClient.getInstance();
-//		var camera = minecraftClient.getCameraEntity();
-//		if (camera == null) return;
-//		camera.setPosition(camera.getPos().add(0f, -4f, 0f));
-
+		EnhancedMovement.LOGGER.info("slide start server");
 		isSliding = true;
 
-		EnhancedMovement.LOGGER.info("server slide start, bounding box = {}", getBoundingBox());
+		var rotationVector = getRotationVector();
+		rotationVector = new Vec3d(rotationVector.x, 0f, rotationVector.z);
+		addVelocity(rotationVector.multiply(2f));
 	}
 
 	public void onSlideStop() {
-		// Move camera back up
-//		var minecraftClient = MinecraftClient.getInstance();
-//		var camera = camera();
-//		if (camera == null) return;
-//		camera.setPosition(camera.getPos().add(0f, 4f, 0f));
-
+		EnhancedMovement.LOGGER.info("slide stop server");
 		isSliding = false;
 		setPosition(getPos().add(0f, 0.5f, 0f));
-
-		EnhancedMovement.LOGGER.info("server slide stop, bounding box = {}", getBoundingBox());
 	}
 }

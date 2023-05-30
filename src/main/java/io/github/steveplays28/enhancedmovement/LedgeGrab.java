@@ -10,6 +10,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +30,7 @@ public class LedgeGrab {
 	public boolean jumpKeyPressedLastTick;
 	public boolean sneakKeyPressedLastTick;
 	public boolean wasNearLedgeLastTick;
+	public boolean isSliding;
 
 	public void tick() {
 		var minecraftClient = MinecraftClient.getInstance();
@@ -60,7 +62,7 @@ public class LedgeGrab {
 			player.setVelocity(player.getVelocity().x, player.getVelocity().y * 0.8f, player.getVelocity().z);
 
 			if (jumpKeyPressed) {
-				player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock * getLedgeHeight(player.getBlockPos()), player.getVelocity().z);
+				player.setVelocity(player.getVelocity().x, EnhancedMovementConfigLoader.CONFIG.ledgeGrabHeightPerBlock, player.getVelocity().z);
 				player.addExhaustion(3000000.0F);
 			} else if (sneakKeyPressed) {
 				player.setVelocity(player.getVelocity().x, 0, player.getVelocity().z);
@@ -68,14 +70,15 @@ public class LedgeGrab {
 		}
 
 		// Sliding
-		if (sneakKeyPressed != sneakKeyPressedLastTick && sneakKeyPressed && !jumpKeyPressed && !isNearLedge && (player.forwardSpeed > 0.1f || player.sidewaysSpeed > 0.1f)) {
+		if (sneakKeyPressed != sneakKeyPressedLastTick && sneakKeyPressed && !jumpKeyPressed && player.isOnGround() && !player.isSubmergedInWater() && !player.isSubmergedIn(FluidTags.LAVA) && !isNearLedge && (player.forwardSpeed > 0.1f || player.sidewaysSpeed > 0.1f)) {
 			onSlideStart(player);
 		}
 		if (sneakKeyPressed != sneakKeyPressedLastTick && !sneakKeyPressed && !jumpKeyPressed && !isNearLedge) {
 			onSlideStop(player);
 		}
-		if (sneakKeyPressed && !jumpKeyPressed && !isNearLedge && (player.forwardSpeed > 0.1f || player.sidewaysSpeed > 0.1f)) {
-
+		if (isSliding && player.getVelocity().length() < 0.1f) {
+			EnhancedMovement.LOGGER.info("stop slide no vel");
+			onSlideStop(player);
 		}
 
 		jumpKeyPressedLastTick = jumpKeyPressed;
@@ -98,21 +101,6 @@ public class LedgeGrab {
 		boolean hasValidLedge = playerBlockPositions.stream().anyMatch(LedgeGrab::isValidLedge);
 		hasValidLedge = hasValidLedge && isEmpty(blockPos.add(0, -1, 0));
 
-//		for (var playerBlockPos : playerBlockPositions) {
-//			if (playerBlockPos == blockPos.add(ledgeGrabRange, 0, 0)) {
-//				// Wall is on the left
-//			} else if (playerBlockPos == blockPos.add(-ledgeGrabRange, 0, 0)) {
-//				// Wall is on the right
-//			} else if (playerBlockPos == blockPos.add(0, 0, ledgeGrabRange)) {
-//				// Wall is in front
-//				var animationContainer = EnhancedMovement.getInstance().enhancedMovement_getModAnimation();
-//
-//				KeyframeAnimation anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID, "climb_front"));
-//				if (anim == null) return hasValidLedge;
-//				animationContainer.setAnimation(new KeyframeAnimationPlayer(anim));
-//			}
-//		}
-
 		return hasValidLedge;
 	}
 
@@ -130,16 +118,6 @@ public class LedgeGrab {
 		BlockState blockState = player.world.getBlockState(blockPos);
 		VoxelShape voxelShape = blockState.getCollisionShape(world, blockPos, ShapeContext.of(player));
 		return voxelShape.isEmpty();
-	}
-
-	public static int getLedgeHeight(BlockPos blockPos) {
-		if (isEmpty(blockPos.add(0, 1, 0))) {
-			return 1;
-		} else if (isEmpty(blockPos.add(0, 2, 0))) {
-			return 1;
-		}
-
-		return 0;
 	}
 
 	public void stopAnimations(ClientPlayerEntity player) {
@@ -183,10 +161,7 @@ public class LedgeGrab {
 	public void onSlideStart(ClientPlayerEntity player) {
 		EnhancedMovement.LOGGER.info("slide start");
 
-		// Add slide velocity
-		var playerRotationVector = player.getRotationVector();
-		playerRotationVector = new Vec3d(playerRotationVector.x, 0f, playerRotationVector.z);
-		player.addVelocity(playerRotationVector.multiply(2f));
+		isSliding = true;
 
 		// Play slide start animation
 		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
@@ -210,17 +185,7 @@ public class LedgeGrab {
 
 	public void onSlideStop(ClientPlayerEntity player) {
 		EnhancedMovement.LOGGER.info("slide stop");
-
-		stopAnimations(player, 5);
-
-		// Play slide stop animation
-//		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
-//		var anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, SLIDE_STOP_ANIMATION));
-//		if (anim == null) {
-//			EnhancedMovement.LOGGER.error("Animation {} doesn't exist.", SLIDE_STOP_ANIMATION);
-//			return;
-//		}
-//
-//		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(5, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
+		isSliding = false;
+		stopAnimations(player, 10);
 	}
 }
