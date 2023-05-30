@@ -29,6 +29,10 @@ repositories {
         name "KosmX's maven"
         url 'https://maven.kosmx.dev/'
     }
+
+    maven {
+        url = "https://jitpack.io"
+    }
 }
 
 dependencies {
@@ -42,9 +46,14 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
-    //If you don't want to include the library in your jar, remove the include word
-    //You can find the latest version in [](https://maven.kosmx.dev/dev/kosmx/player-anim/player-animation-lib-fabric/)
+    // If you don't want to include the library in your jar, remove the include word
+    // You can find the latest version in [](https://maven.kosmx.dev/dev/kosmx/player-anim/player-animation-lib-fabric/)
     include modImplementation("dev.kosmx.player-anim:player-animation-lib-fabric:${project.player_anim}")
+
+    // Pehkui
+    modApi("com.github.Virtuoel:Pehkui:${pehkui_version}", {
+        exclude group: "net.fabricmc.fabric-api"
+    })
 }
 
 processResources {

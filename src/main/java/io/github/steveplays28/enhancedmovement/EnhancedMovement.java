@@ -3,6 +3,8 @@ package io.github.steveplays28.enhancedmovement;
 import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoader;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.entity.player.PlayerEntity;
@@ -61,6 +63,12 @@ public class EnhancedMovement implements ModInitializer {
 		EnhancedMovementConfigLoader.CONFIG = EnhancedMovementConfigLoader.load();
 		instance = this;
 		NetworkHandler.registerReceivers();
+
+		// Listen for when the server is reloading (i.e. /reload), and reload the config
+		ServerLifecycleEvents.START_DATA_PACK_RELOAD.register((s, m) -> {
+			LOGGER.info("Reloading config!");
+			EnhancedMovementConfigLoader.load();
+		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.player != null) {

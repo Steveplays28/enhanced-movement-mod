@@ -10,8 +10,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,6 +22,9 @@ import java.util.List;
 public class LedgeGrab {
 	public static final String CLIMB_FRONT_ANIMATION = "climb_front";
 	public static final String HANG_ANIMATION = "hang";
+	public static final String SLIDE_START_ANIMATION = "slide_start";
+//	public static final String SLIDE_STOP_ANIMATION = "slide_stop";
+	public static final String SLIDE_ANIMATION = "slide";
 
 	public boolean jumpKeyPressedLastTick;
 	public boolean sneakKeyPressedLastTick;
@@ -62,12 +67,23 @@ public class LedgeGrab {
 			}
 		}
 
+		// Sliding
+		if (sneakKeyPressed != sneakKeyPressedLastTick && sneakKeyPressed && !jumpKeyPressed && !isNearLedge && (player.forwardSpeed > 0.1f || player.sidewaysSpeed > 0.1f)) {
+			onSlideStart(player);
+		}
+		if (sneakKeyPressed != sneakKeyPressedLastTick && !sneakKeyPressed && !jumpKeyPressed && !isNearLedge) {
+			onSlideStop(player);
+		}
+		if (sneakKeyPressed && !jumpKeyPressed && !isNearLedge && (player.forwardSpeed > 0.1f || player.sidewaysSpeed > 0.1f)) {
+
+		}
+
 		jumpKeyPressedLastTick = jumpKeyPressed;
 		sneakKeyPressedLastTick = sneakKeyPressed;
 		wasNearLedgeLastTick = isNearLedge;
 	}
 
-	public boolean isNearLedge(@NotNull BlockPos blockPos) {
+	public static boolean isNearLedge(@NotNull BlockPos blockPos) {
 		var ledgeGrabRange = EnhancedMovementConfigLoader.CONFIG.ledgeGrabRange;
 
 		// List of blocks which surrounds the player
@@ -79,7 +95,7 @@ public class LedgeGrab {
 				blockPos.add(0, 1, 0), blockPos.add(ledgeGrabRange, 1, 0), blockPos.add(-ledgeGrabRange, 1, 0), blockPos.add(0, 1, -ledgeGrabRange), blockPos.add(0, 1, ledgeGrabRange));
 
 		// Check if any of the surroundings is a valid ledge
-		boolean hasValidLedge = playerBlockPositions.stream().anyMatch(this::isValidLedge);
+		boolean hasValidLedge = playerBlockPositions.stream().anyMatch(LedgeGrab::isValidLedge);
 		hasValidLedge = hasValidLedge && isEmpty(blockPos.add(0, -1, 0));
 
 //		for (var playerBlockPos : playerBlockPositions) {
@@ -100,12 +116,12 @@ public class LedgeGrab {
 		return hasValidLedge;
 	}
 
-	public boolean isValidLedge(BlockPos blockPos) {
+	public static boolean isValidLedge(BlockPos blockPos) {
 		// Check if the ledge block isn't empty so it doesn't try to grab onto air
 		return !isEmpty(blockPos);
 	}
 
-	public boolean isEmpty(BlockPos blockPos) {
+	public static boolean isEmpty(BlockPos blockPos) {
 		var minecraftClient = MinecraftClient.getInstance();
 		var player = minecraftClient.player;
 		if (player == null) return true;
@@ -116,7 +132,7 @@ public class LedgeGrab {
 		return voxelShape.isEmpty();
 	}
 
-	public int getLedgeHeight(BlockPos blockPos) {
+	public static int getLedgeHeight(BlockPos blockPos) {
 		if (isEmpty(blockPos.add(0, 1, 0))) {
 			return 1;
 		} else if (isEmpty(blockPos.add(0, 2, 0))) {
@@ -124,6 +140,20 @@ public class LedgeGrab {
 		}
 
 		return 0;
+	}
+
+	public void stopAnimations(ClientPlayerEntity player) {
+		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), null);
+
+		EnhancedMovement.LOGGER.info("stopping all animations");
+	}
+
+	public void stopAnimations(ClientPlayerEntity player, int fadeLength) {
+		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(fadeLength, Ease.LINEAR), null);
+
+		EnhancedMovement.LOGGER.info("stopping all animations");
 	}
 
 	public void onLedgeClimb(ClientPlayerEntity player) {
@@ -150,10 +180,47 @@ public class LedgeGrab {
 		EnhancedMovement.LOGGER.info("playing ledge hang animation");
 	}
 
-	public void stopAnimations(ClientPlayerEntity player) {
-		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
-		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(20, Ease.LINEAR), null);
+	public void onSlideStart(ClientPlayerEntity player) {
+		EnhancedMovement.LOGGER.info("slide start");
 
-		EnhancedMovement.LOGGER.info("stopping all animations");
+		// Add slide velocity
+		var playerRotationVector = player.getRotationVector();
+		playerRotationVector = new Vec3d(playerRotationVector.x, 0f, playerRotationVector.z);
+		player.addVelocity(playerRotationVector.multiply(2f));
+
+		// Play slide start animation
+		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+		var anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, SLIDE_START_ANIMATION));
+		if (anim == null) {
+			EnhancedMovement.LOGGER.error("Animation {} doesn't exist.", SLIDE_START_ANIMATION);
+			return;
+		}
+
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(5, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
+
+		// Play slide animation
+		var anim2 = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, SLIDE_ANIMATION));
+		if (anim2 == null) {
+			EnhancedMovement.LOGGER.error("Animation {} doesn't exist.", SLIDE_ANIMATION);
+			return;
+		}
+
+		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(5, Ease.LINEAR), new KeyframeAnimationPlayer(anim2));
+	}
+
+	public void onSlideStop(ClientPlayerEntity player) {
+		EnhancedMovement.LOGGER.info("slide stop");
+
+		stopAnimations(player, 5);
+
+		// Play slide stop animation
+//		var animationContainer = ((IAnimatedPlayer) player).enhancedMovement_getModAnimation();
+//		var anim = PlayerAnimationRegistry.getAnimation(new Identifier(EnhancedMovement.MOD_ID_FOLDERS, SLIDE_STOP_ANIMATION));
+//		if (anim == null) {
+//			EnhancedMovement.LOGGER.error("Animation {} doesn't exist.", SLIDE_STOP_ANIMATION);
+//			return;
+//		}
+//
+//		animationContainer.replaceAnimationWithFade(AbstractFadeModifier.standardFadeIn(5, Ease.LINEAR), new KeyframeAnimationPlayer(anim));
 	}
 }

@@ -14,4 +14,8 @@ public class EnhancedMovementConfig {
 	public float inAirDashSpeed = 1.3f;
 	public int ledgeGrabRange = 1;
 	public float ledgeGrabHeightPerBlock = 0.2f;
+
+	public float slideHitBoxOffsetY = -0.6f;
+	public float slideEyeHeight = 0.7f;
+	public float slideHitBoxContractY = 0.7f;
 }
