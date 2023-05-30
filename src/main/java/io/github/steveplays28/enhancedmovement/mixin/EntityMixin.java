@@ -5,6 +5,7 @@ import io.github.steveplays28.enhancedmovement.LedgeGrab;
 import io.github.steveplays28.enhancedmovement.config.EnhancedMovementConfigLoader;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.registry.tag.TagKey;
@@ -20,11 +21,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin {
-	@Shadow
-	public float speed;
-	@Shadow
-	public float horizontalSpeed;
-
 	@Shadow
 	private EntityDimensions dimensions;
 	@Shadow
@@ -55,11 +51,17 @@ public abstract class EntityMixin {
 	@Shadow
 	public abstract void addVelocity(Vec3d velocity);
 
-	@Shadow public abstract Vec3d getVelocity();
+	@Shadow
+	public abstract Vec3d getVelocity();
 
-	@Shadow public abstract boolean isSubmergedInWater();
+	@Shadow
+	public abstract boolean isSubmergedInWater();
 
-	@Shadow public abstract boolean isSubmergedIn(TagKey<Fluid> fluidTag);
+	@Shadow
+	public abstract boolean isSubmergedIn(TagKey<Fluid> fluidTag);
+
+	@Shadow
+	public abstract boolean isSprinting();
 
 	public boolean wasSneakingLastTick;
 	public boolean isSliding;
@@ -69,7 +71,7 @@ public abstract class EntityMixin {
 		if (!isPlayer()) return;
 
 		// Sliding
-		if (isSneaking() != wasSneakingLastTick && isSneaking() && isOnGround() && !isSubmergedInWater() && !isSubmergedIn(FluidTags.LAVA) && !LedgeGrab.isNearLedge(getBlockPos()) && (speed > 0.1f || horizontalSpeed > 0.1f)) {
+		if (isSneaking() != wasSneakingLastTick && isSneaking() && isOnGround() && !isSubmergedInWater() && !isSubmergedIn(FluidTags.LAVA) && !LedgeGrab.isNearLedge(getBlockPos()) && isSprinting()) {
 			onSlideStart();
 		}
 		if (isSneaking() != wasSneakingLastTick && wasSneakingLastTick && !isSneaking() && isSliding) {
@@ -108,5 +110,19 @@ public abstract class EntityMixin {
 		EnhancedMovement.LOGGER.info("slide stop server");
 		isSliding = false;
 		setPosition(getPos().add(0f, 0.5f, 0f));
+	}
+
+	@Mixin(PlayerEntity.class)
+	public abstract static class PlayerEntityMixin extends EntityMixin {
+		@Inject(method = "clipAtLedge", at = @At("HEAD"), cancellable = true)
+		public void clipAtLedge(CallbackInfoReturnable<Boolean> cir) {
+			var entity = (EntityMixin) this;
+
+			if (entity.isSliding) {
+				cir.setReturnValue(false);
+			} else {
+				cir.setReturnValue(isSneaking());
+			}
+		}
 	}
 }

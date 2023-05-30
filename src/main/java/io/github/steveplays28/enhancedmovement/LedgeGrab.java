@@ -11,10 +11,8 @@ import net.minecraft.block.ShapeContext;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.registry.tag.FluidTags;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,7 +22,7 @@ public class LedgeGrab {
 	public static final String CLIMB_FRONT_ANIMATION = "climb_front";
 	public static final String HANG_ANIMATION = "hang";
 	public static final String SLIDE_START_ANIMATION = "slide_start";
-//	public static final String SLIDE_STOP_ANIMATION = "slide_stop";
+	//	public static final String SLIDE_STOP_ANIMATION = "slide_stop";
 	public static final String SLIDE_ANIMATION = "slide";
 
 	public boolean jumpKeyPressedLastTick;
@@ -70,7 +68,7 @@ public class LedgeGrab {
 		}
 
 		// Sliding
-		if (sneakKeyPressed != sneakKeyPressedLastTick && sneakKeyPressed && !jumpKeyPressed && player.isOnGround() && !player.isSubmergedInWater() && !player.isSubmergedIn(FluidTags.LAVA) && !isNearLedge && (player.forwardSpeed > 0.1f || player.sidewaysSpeed > 0.1f)) {
+		if (sneakKeyPressed != sneakKeyPressedLastTick && sneakKeyPressed && !jumpKeyPressed && player.isOnGround() && !player.isSubmergedInWater() && !player.isSubmergedIn(FluidTags.LAVA) && !isNearLedge && player.isSprinting()) {
 			onSlideStart(player);
 		}
 		if (sneakKeyPressed != sneakKeyPressedLastTick && !sneakKeyPressed && !jumpKeyPressed && !isNearLedge) {
@@ -186,6 +184,6 @@ public class LedgeGrab {
 	public void onSlideStop(ClientPlayerEntity player) {
 		EnhancedMovement.LOGGER.info("slide stop");
 		isSliding = false;
-		stopAnimations(player, 10);
+		stopAnimations(player, 5);
 	}
 }
