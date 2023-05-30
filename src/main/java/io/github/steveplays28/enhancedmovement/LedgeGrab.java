@@ -184,6 +184,6 @@ public class LedgeGrab {
 	public void onSlideStop(ClientPlayerEntity player) {
 		EnhancedMovement.LOGGER.info("slide stop");
 		isSliding = false;
-		stopAnimations(player, 5);
+		stopAnimations(player, 10);
 	}
 }
